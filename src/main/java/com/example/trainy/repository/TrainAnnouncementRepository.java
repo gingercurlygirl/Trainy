@@ -8,5 +8,4 @@ import java.util.Optional;
 
 @Repository
 public interface TrainAnnouncementRepository extends JpaRepository<TrainAnnouncement, Long> {
-    Optional<TrainAnnouncement> findByOfficialLocationName(String officialLocationName);
 }

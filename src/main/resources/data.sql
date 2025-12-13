@@ -1,10 +1,5 @@
-INSERT IGNORE INTO train_stations (id, official_location_name)
+INSERT IGNORE INTO trafikverket (activity_id, advertised_time_at_location, estimated_time_at_location, location_signature, advertised_train_iden, track_at_location, to_location, modified_time, activity_type)
 VALUES
-    (1, 'ivana'),
-    (2, 'mark'),
-    (3, 'david'),
-    (4, 'patrik'),
-    (5, 'ema'),
-    (6, 'dominik'),
-    (7, 'pero')
+    ('1500adde-8f5d-819e-08de-2e16b9b55d98', '2025-12-13 15:19:00', '2025-12-13 20:19:00', 'Vhd', '237', '3','Cst', '2025-12-13 18:19:00' ,'Ankomst')
+
 ;
