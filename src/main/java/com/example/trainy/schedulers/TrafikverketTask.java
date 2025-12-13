@@ -1,6 +1,6 @@
 package com.example.trainy.schedulers;
 
-import com.example.trainy.repository.TrainStationRepository;
+import com.example.trainy.repository.TrainAnnouncementRepository;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -17,11 +17,11 @@ import java.time.format.DateTimeFormatter;
 public class TrafikverketTask {
 
     private final RestTemplate restTemplate;
-    private final TrainStationRepository trainStationRepository; // TODO: use me!
+    private final TrainAnnouncementRepository trainAnnouncementRepository; // TODO: use me!
 
-    public TrafikverketTask(RestTemplate restTemplate, TrainStationRepository trainStationRepository) {
+    public TrafikverketTask(RestTemplate restTemplate, TrainAnnouncementRepository trainAnnouncementRepository) {
         this.restTemplate = restTemplate;
-        this.trainStationRepository = trainStationRepository;
+        this.trainAnnouncementRepository = trainAnnouncementRepository;
     }
 
     @Scheduled(fixedRate = 60_000)
