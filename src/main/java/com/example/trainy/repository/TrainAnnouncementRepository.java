@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface TrainAnnouncementRepository extends JpaRepository<TrainAnnouncement, Long> {
+public interface TrainAnnouncementRepository extends JpaRepository<TrainAnnouncement, String> {
 }
