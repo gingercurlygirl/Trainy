@@ -44,7 +44,7 @@ public class TrainAnnouncement {
     private Long delayMinutes;
 
     @Column(name = "canceled")
-    private boolean canceled;
+    private Boolean canceled;
 
     @Column(name = "deviation", columnDefinition = "TEXT")
     private String deviation;
@@ -131,11 +131,11 @@ public class TrainAnnouncement {
         this.delayMinutes = delayMinutes;
     }
 
-    public boolean isCanceled() {
+    public Boolean isCanceled() {
         return canceled;
     }
 
-    public void setCanceled(boolean canceled) {
+    public void setCanceled(Boolean canceled) {
         this.canceled = canceled;
     }
 

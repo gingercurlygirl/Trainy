@@ -16,12 +16,22 @@ public class TrainAnnouncementService {
         this.trainAnnouncementRepository = trainAnnouncementRepository;
     }
 
-    public List<TrainAnnouncement> getAllTrainAnnouncements() {
+    public List<TrainAnnouncement> getAll(String station, String type) {
+        if (station != null && type != null) {
+            return trainAnnouncementRepository.findByLocationSignatureAndActivityType(station, type);
+        }
+        if (station != null) {
+            return trainAnnouncementRepository.findByLocationSignature(station);
+        }
         return trainAnnouncementRepository.findAll();
     }
 
-    public DelayStats getStats() {
-        List<TrainAnnouncement> all = trainAnnouncementRepository.findAll();
+    public List<String> getStations() {
+        return trainAnnouncementRepository.findDistinctStations();
+    }
+
+    public DelayStats getStats(String station, String type) {
+        List<TrainAnnouncement> all = getAll(station, type);
 
         long totalCount = all.size();
         long delayedCount = all.stream()

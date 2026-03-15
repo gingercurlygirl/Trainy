@@ -3,6 +3,7 @@ package com.example.trainy.schedulers;
 import com.example.trainy.model.TrainAnnouncement;
 import com.example.trainy.repository.TrainAnnouncementRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -23,7 +24,10 @@ import java.util.List;
 public class TrafikverketTask {
 
     private final RestTemplate restTemplate;
-    private final TrainAnnouncementRepository trainAnnouncementRepository; // TODO: use me!
+    private final TrainAnnouncementRepository trainAnnouncementRepository;
+
+    @Value("${trafikverket.stations}")
+    private String[] stations;
 
     public TrafikverketTask(RestTemplate restTemplate, TrainAnnouncementRepository trainAnnouncementRepository) {
         this.restTemplate = restTemplate;
@@ -32,16 +36,15 @@ public class TrafikverketTask {
 
     @Scheduled(fixedRate = 60_000)
     public void run() {
-        String response = requestTrainAnnouncements();
-
-        if (response == null || response.isEmpty()) {
-            return;
+        for (String station : stations) {
+            String response = requestTrainAnnouncements(station.trim());
+            if (response != null && !response.isEmpty()) {
+                fillDatabase(response);
+            }
         }
-
-        fillDatabase(response);
     }
 
-    private String requestTrainAnnouncements() {
+    private String requestTrainAnnouncements(String station) {
         String url = "https://api.trafikinfo.trafikverket.se/v2/data.json";
 
         HttpHeaders headers = new HttpHeaders();
@@ -64,8 +67,7 @@ public class TrafikverketTask {
                     <FILTER>
                       <AND>
                         <EQ name="InformationOwner" value="Mälardalstrafik AB" />
-                        <EQ name="ActivityType" value="avgang" />
-                        <EQ name="LocationSignature" value="Vhd" />
+                        <EQ name="LocationSignature" value="%s" />
                         <OR>
                           <AND>
                             <LT name="AdvertisedTimeAtLocation" value="%s" />
@@ -79,11 +81,10 @@ public class TrafikverketTask {
                       </AND>
                     </FILTER>
                   </QUERY>
-                </REQUEST>""", api_key, to, from, to, from);
+                </REQUEST>""", api_key, station, to, from, to, from);
 
         HttpEntity<String> request = new HttpEntity<>(htmlBody, headers);
 
-        // Response
         return restTemplate.postForObject(url, request, String.class);
     }
 
@@ -109,8 +110,12 @@ public class TrafikverketTask {
         String locationSignature = announcement.path("LocationSignature").asText();
         String advertisedTrainIden = announcement.path("AdvertisedTrainIdent").asText();
         String trackAtLocation = announcement.path("TrackAtLocation").asText();
-        String toLocation = announcement.path("ToLocation").get(0).path("LocationName").asText();
         String activityType = announcement.path("ActivityType").asText();
+
+        JsonNode toLocationNode = announcement.path("ToLocation");
+        String toLocation = (toLocationNode.isArray() && !toLocationNode.isEmpty())
+                ? toLocationNode.get(0).path("LocationName").asText()
+                : null;
 
         Instant advertisedTimeAtLocation = Instant.parse(announcement.path("AdvertisedTimeAtLocation").asText());
         Instant estimatedTimeAtLocation = null;
@@ -120,7 +125,7 @@ public class TrafikverketTask {
             delayMinutes = Duration.between(advertisedTimeAtLocation, estimatedTimeAtLocation).toMinutes();
         }
 
-        boolean canceled = announcement.path("Canceled").asBoolean(false);
+        Boolean canceled = announcement.path("Canceled").asBoolean(false);
 
         String deviation = null;
         JsonNode deviationNode = announcement.path("Deviation");
