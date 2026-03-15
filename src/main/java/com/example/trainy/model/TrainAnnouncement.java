@@ -43,7 +43,13 @@ public class TrainAnnouncement {
     @Column(name = "delay_minutes")
     private Long delayMinutes;
 
-    public TrainAnnouncement(String activityId, Instant advertisedTimeAtLocation, Instant estimatedTimeAtLocation, String locationSignature, String advertisedTrainIden, String trackAtLocation, String toLocation, String activityType, Long delayMinutes) {
+    @Column(name = "canceled")
+    private boolean canceled;
+
+    @Column(name = "deviation", columnDefinition = "TEXT")
+    private String deviation;
+
+    public TrainAnnouncement(String activityId, Instant advertisedTimeAtLocation, Instant estimatedTimeAtLocation, String locationSignature, String advertisedTrainIden, String trackAtLocation, String toLocation, String activityType, Long delayMinutes, boolean canceled, String deviation) {
         this.activityId = activityId;
         this.advertisedTimeAtLocation = advertisedTimeAtLocation;
         this.estimatedTimeAtLocation = estimatedTimeAtLocation;
@@ -53,6 +59,8 @@ public class TrainAnnouncement {
         this.toLocation = toLocation;
         this.activityType = activityType;
         this.delayMinutes = delayMinutes;
+        this.canceled = canceled;
+        this.deviation = deviation;
     }
 
     public TrainAnnouncement() {
@@ -121,6 +129,22 @@ public class TrainAnnouncement {
 
     public void setDelayMinutes(Long delayMinutes) {
         this.delayMinutes = delayMinutes;
+    }
+
+    public boolean isCanceled() {
+        return canceled;
+    }
+
+    public void setCanceled(boolean canceled) {
+        this.canceled = canceled;
+    }
+
+    public String getDeviation() {
+        return deviation;
+    }
+
+    public void setDeviation(String deviation) {
+        this.deviation = deviation;
     }
 
 }

@@ -16,6 +16,8 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class TrafikverketTask {
@@ -118,6 +120,23 @@ public class TrafikverketTask {
             delayMinutes = Duration.between(advertisedTimeAtLocation, estimatedTimeAtLocation).toMinutes();
         }
 
+        boolean canceled = announcement.path("Canceled").asBoolean(false);
+
+        String deviation = null;
+        JsonNode deviationNode = announcement.path("Deviation");
+        if (deviationNode.isArray() && !deviationNode.isEmpty()) {
+            List<String> descriptions = new ArrayList<>();
+            for (JsonNode d : deviationNode) {
+                String desc = d.path("Description").asText();
+                if (!desc.isBlank()) {
+                    descriptions.add(desc);
+                }
+            }
+            if (!descriptions.isEmpty()) {
+                deviation = String.join("; ", descriptions);
+            }
+        }
+
         TrainAnnouncement trainAnnouncement = new TrainAnnouncement(
                 activityId,
                 advertisedTimeAtLocation,
@@ -127,7 +146,9 @@ public class TrafikverketTask {
                 trackAtLocation,
                 toLocation,
                 activityType,
-                delayMinutes);
+                delayMinutes,
+                canceled,
+                deviation);
 
         if (trainAnnouncementRepository.findById(activityId).isEmpty()) {
             trainAnnouncementRepository.save(trainAnnouncement);
