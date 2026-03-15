@@ -1,5 +1,6 @@
 package com.example.trainy.controller;
 
+import com.example.trainy.model.DelayStats;
 import com.example.trainy.model.TrainAnnouncement;
 import com.example.trainy.service.TrainAnnouncementService;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,11 @@ public class TrainAnnouncementController {
     @GetMapping()
     public ResponseEntity<List<TrainAnnouncement>> getAllTrainAnnouncements() {
         return ResponseEntity.ok(trainAnnouncementService.getAllTrainAnnouncements());
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<DelayStats> getStats() {
+        return ResponseEntity.ok(trainAnnouncementService.getStats());
     }
 
 }

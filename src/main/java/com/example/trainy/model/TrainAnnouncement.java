@@ -40,7 +40,10 @@ public class TrainAnnouncement {
     @Column(name = "activity_type", length = 50)
     private String activityType;
 
-    public TrainAnnouncement(String activityId, Instant advertisedTimeAtLocation, Instant estimatedTimeAtLocation, String locationSignature, String advertisedTrainIden, String trackAtLocation, String toLocation, String activityType) {
+    @Column(name = "delay_minutes")
+    private Long delayMinutes;
+
+    public TrainAnnouncement(String activityId, Instant advertisedTimeAtLocation, Instant estimatedTimeAtLocation, String locationSignature, String advertisedTrainIden, String trackAtLocation, String toLocation, String activityType, Long delayMinutes) {
         this.activityId = activityId;
         this.advertisedTimeAtLocation = advertisedTimeAtLocation;
         this.estimatedTimeAtLocation = estimatedTimeAtLocation;
@@ -49,6 +52,7 @@ public class TrainAnnouncement {
         this.trackAtLocation = trackAtLocation;
         this.toLocation = toLocation;
         this.activityType = activityType;
+        this.delayMinutes = delayMinutes;
     }
 
     public TrainAnnouncement() {
@@ -109,6 +113,14 @@ public class TrainAnnouncement {
 
     public void setActivityId(String activityId) {
         this.activityId = activityId;
+    }
+
+    public Long getDelayMinutes() {
+        return delayMinutes;
+    }
+
+    public void setDelayMinutes(Long delayMinutes) {
+        this.delayMinutes = delayMinutes;
     }
 
 }

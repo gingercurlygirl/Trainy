@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -111,8 +112,10 @@ public class TrafikverketTask {
 
         Instant advertisedTimeAtLocation = Instant.parse(announcement.path("AdvertisedTimeAtLocation").asText());
         Instant estimatedTimeAtLocation = null;
+        Long delayMinutes = null;
         if (announcement.findValue("EstimatedTimeAtLocation") != null) {
             estimatedTimeAtLocation = Instant.parse(announcement.path("EstimatedTimeAtLocation").asText());
+            delayMinutes = Duration.between(advertisedTimeAtLocation, estimatedTimeAtLocation).toMinutes();
         }
 
         TrainAnnouncement trainAnnouncement = new TrainAnnouncement(
@@ -123,7 +126,8 @@ public class TrafikverketTask {
                 advertisedTrainIden,
                 trackAtLocation,
                 toLocation,
-                activityType);
+                activityType,
+                delayMinutes);
 
         if (trainAnnouncementRepository.findById(activityId).isEmpty()) {
             trainAnnouncementRepository.save(trainAnnouncement);
