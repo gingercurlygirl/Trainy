@@ -4,6 +4,7 @@ import DelayChart from './components/DelayChart'
 import DelayByHourChart from './components/DelayByHourChart'
 import DelayByTrainChart from './components/DelayByTrainChart'
 import DelayByWeekdayChart from './components/DelayByWeekdayChart'
+import DeviationChart from './components/DeviationChart'
 import DelayTrendChart from './components/DelayTrendChart'
 import TrainTable from './components/TrainTable'
 import StationSelector from './components/StationSelector'
@@ -26,6 +27,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('aktuellt')
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState(null)
+  const [statsFromDate, setStatsFromDate] = useState('')
 
   async function fetchStations() {
     try {
@@ -74,11 +76,30 @@ export default function App() {
     setTrains([])
     setHistoricalTrains([])
     setSelectedDestination('')
+    setStatsFromDate('')
     setLoading(true)
     fetchData(selectedStation, activityType)
     const interval = setInterval(() => fetchData(selectedStation, activityType), REFRESH_INTERVAL)
     return () => clearInterval(interval)
   }, [selectedStation, activityType])
+
+  useEffect(() => {
+    if (historicalTrains.length === 0) return
+    const dates = historicalTrains
+      .map((t) => new Date(t.advertisedTimeAtLocation))
+      .sort((a, b) => a - b)
+    // Find largest gap between consecutive days
+    let gapAfter = null
+    for (let i = 1; i < dates.length; i++) {
+      const diffDays = (dates[i] - dates[i - 1]) / (1000 * 60 * 60 * 24)
+      if (diffDays > 7) {
+        gapAfter = dates[i]
+      }
+    }
+    if (gapAfter) {
+      setStatsFromDate(gapAfter.toISOString().slice(0, 10))
+    }
+  }, [historicalTrains])
 
   useEffect(() => {
     const interval = setInterval(fetchStations, REFRESH_INTERVAL)
@@ -111,11 +132,26 @@ export default function App() {
   }, [trains, selectedDestination])
 
   const filteredHistoricalTrains = useMemo(() => {
-    if (!selectedDestination) return historicalTrains
-    return historicalTrains.filter((t) => t.toLocation === selectedDestination)
-  }, [historicalTrains, selectedDestination])
+    let result = historicalTrains
+    if (selectedDestination) result = result.filter((t) => t.toLocation === selectedDestination)
+    if (statsFromDate) result = result.filter((t) => new Date(t.advertisedTimeAtLocation) >= new Date(statsFromDate))
+    return result
+  }, [historicalTrains, selectedDestination, statsFromDate])
 
-  const stats = historicalStats
+  const stats = useMemo(() => {
+    const all = filteredHistoricalTrains
+    if (all.length === 0) return historicalStats
+    const totalCount = all.length
+    const canceledCount = all.filter((t) => t.canceled === true).length
+    const delayedCount = all.filter((t) => !t.canceled && t.delayMinutes != null && t.delayMinutes > 0).length
+    const onTimeCount = totalCount - canceledCount - delayedCount
+    const delayedOnly = all.filter((t) => !t.canceled && t.delayMinutes != null && t.delayMinutes > 0)
+    const averageDelayMinutes = delayedOnly.length > 0
+      ? delayedOnly.reduce((sum, t) => sum + t.delayMinutes, 0) / delayedOnly.length
+      : 0
+    const maxDelayMinutes = all.reduce((max, t) => t.delayMinutes != null ? Math.max(max, t.delayMinutes) : max, 0)
+    return { totalCount, canceledCount, delayedCount, onTimeCount, averageDelayMinutes, maxDelayMinutes }
+  }, [filteredHistoricalTrains, historicalStats])
 
   const typeLabel = activityType === 'avgang' ? 'avgångar' : 'ankomster'
 
@@ -195,7 +231,21 @@ export default function App() {
           )}
 
           {activeTab === 'statistik' && (
-            <div>
+            <div style={styles.statsLayout}>
+              <div style={styles.dateFilter}>
+                <label style={styles.dateLabel}>Visa statistik från:</label>
+                <input
+                  type="date"
+                  value={statsFromDate}
+                  onChange={(e) => setStatsFromDate(e.target.value)}
+                  style={styles.dateInput}
+                />
+                {statsFromDate && (
+                  <button onClick={() => setStatsFromDate('')} style={styles.clearBtn}>
+                    Visa alla
+                  </button>
+                )}
+              </div>
               <Legend />
               <DelayTrendChart trains={filteredHistoricalTrains} />
               <DelayChart trains={filteredHistoricalTrains} />
@@ -203,7 +253,10 @@ export default function App() {
                 <DelayByHourChart trains={filteredHistoricalTrains} />
                 <DelayByTrainChart trains={filteredHistoricalTrains} />
               </div>
-              <DelayByWeekdayChart trains={filteredHistoricalTrains} />
+              <div style={styles.chartGrid}>
+                <DelayByWeekdayChart trains={filteredHistoricalTrains} />
+                <DeviationChart trains={filteredHistoricalTrains} />
+              </div>
             </div>
           )}
         </>
@@ -318,6 +371,42 @@ const styles = {
   tabActive: {
     color: '#4f46e5',
     borderBottom: '2px solid #4f46e5',
+  },
+  statsLayout: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.5rem',
+  },
+  dateFilter: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    background: '#fff',
+    borderRadius: '12px',
+    padding: '1rem 1.5rem',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+  },
+  dateLabel: {
+    fontSize: '0.85rem',
+    color: '#6b7280',
+    fontWeight: '500',
+    whiteSpace: 'nowrap',
+  },
+  dateInput: {
+    padding: '0.4rem 0.75rem',
+    borderRadius: '8px',
+    border: '1px solid #d1d5db',
+    fontSize: '0.85rem',
+    color: '#374151',
+  },
+  clearBtn: {
+    padding: '0.4rem 0.9rem',
+    borderRadius: '8px',
+    border: '1px solid #d1d5db',
+    background: '#f9fafb',
+    cursor: 'pointer',
+    fontSize: '0.85rem',
+    color: '#6b7280',
   },
   chartGrid: {
     display: 'grid',

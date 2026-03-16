@@ -40,7 +40,7 @@ const styles = {
     borderRadius: '12px',
     padding: '1rem 1.5rem',
     boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-    marginBottom: '1.5rem',
+    marginBottom: '0',
     display: 'flex',
     alignItems: 'center',
     gap: '1rem',

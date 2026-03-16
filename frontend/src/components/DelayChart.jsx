@@ -55,6 +55,6 @@ const styles = {
     borderRadius: '12px',
     padding: '1.5rem',
     boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-    marginBottom: '2rem',
+    marginBottom: '0',
   },
 }

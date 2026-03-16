@@ -62,10 +62,28 @@ export default function DelayTrendChart({ trains }) {
           <XAxis dataKey="vecka" tick={{ fontSize: 11 }} />
           <YAxis tick={{ fontSize: 12 }} unit="%" />
           <Tooltip
-            formatter={(value, name) => [`${value}%`, name]}
-            labelFormatter={(label) => {
+            formatter={(value, name) => {
+              const d = data.find((x) => x.vecka === name || true)
+              if (name === 'försenadeProcent') {
+                const entry = data.find((x) => x.försenadeProcent === value || x.vecka)
+                return null
+              }
+              return [`${value}%`, name]
+            }}
+            content={({ active, payload, label }) => {
+              if (!active || !payload || !payload.length) return null
               const d = data.find((x) => x.vecka === label)
-              return `Vecka fr. ${label} (${d?.antalTåg} tåg)`
+              if (!d) return null
+              const försenade = Math.round((d.försenadeProcent / 100) * d.antalTåg)
+              const inställda = Math.round((d.inställdaProcent / 100) * d.antalTåg)
+              return (
+                <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem 1rem', fontSize: '0.85rem', lineHeight: '1.6' }}>
+                  <div style={{ fontWeight: '700', marginBottom: '0.3rem' }}>Vecka fr. {label}</div>
+                  <div style={{ color: '#6b7280' }}>Totalt: {d.antalTåg} tåg</div>
+                  <div style={{ color: '#4f46e5' }}>Försenade: {d.försenadeProcent}% ({försenade} tåg)</div>
+                  <div style={{ color: '#dc2626' }}>Inställda: {d.inställdaProcent}% ({inställda} tåg)</div>
+                </div>
+              )
             }}
           />
           <Legend />
@@ -100,7 +118,7 @@ const styles = {
     borderRadius: '12px',
     padding: '1.5rem',
     boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-    marginBottom: '1.5rem',
+    marginBottom: '0',
   },
   empty: {
     textAlign: 'center',
