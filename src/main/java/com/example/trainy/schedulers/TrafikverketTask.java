@@ -2,9 +2,8 @@ package com.example.trainy.schedulers;
 
 import com.example.trainy.model.TrainAnnouncement;
 import com.example.trainy.repository.TrainAnnouncementRepository;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.example.trainy.service.StationService;
-import org.springframework.beans.factory.annotation.Value;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -19,7 +18,9 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Component
 public class TrafikverketTask {
@@ -28,8 +29,7 @@ public class TrafikverketTask {
     private final TrainAnnouncementRepository trainAnnouncementRepository;
     private final StationService stationService;
 
-    @Value("${trafikverket.stations}")
-    private String[] stations;
+    private volatile String[] discoveredStations = null;
 
     public TrafikverketTask(RestTemplate restTemplate, TrainAnnouncementRepository trainAnnouncementRepository, StationService stationService) {
         this.restTemplate = restTemplate;
@@ -37,10 +37,62 @@ public class TrafikverketTask {
         this.stationService = stationService;
     }
 
+    private String[] getStations() {
+        if (discoveredStations == null) {
+            discoveredStations = discoverStationCodes();
+        }
+        return discoveredStations;
+    }
+
+    private String[] discoverStationCodes() {
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime from = now.minusHours(24);
+        DateTimeFormatter fmt = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
+        String url = "https://api.trafikinfo.trafikverket.se/v2/data.json";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(new MediaType("text", "xml", StandardCharsets.UTF_8));
+        String apiKey = System.getenv().getOrDefault("TRAFIKVERKET_API_KEY", "demokey");
+
+        String body = String.format("""
+                <REQUEST>
+                  <LOGIN authenticationkey="%s"/>
+                  <QUERY objecttype="TrainAnnouncement" schemaversion="1.9" limit="5000">
+                    <FILTER>
+                      <AND>
+                        <EQ name="InformationOwner" value="Mälardalstrafik AB" />
+                        <GT name="AdvertisedTimeAtLocation" value="%s" />
+                        <LT name="AdvertisedTimeAtLocation" value="%s" />
+                      </AND>
+                    </FILTER>
+                    <INCLUDE>LocationSignature</INCLUDE>
+                  </QUERY>
+                </REQUEST>""", apiKey, from.format(fmt), now.format(fmt));
+
+        HttpEntity<String> request = new HttpEntity<>(body, headers);
+        String response = restTemplate.postForObject(url, request, String.class);
+
+        JsonNode root = JsonUtil.parseSafely(response);
+        if (root == null) return new String[0];
+
+        JsonNode announcements = root.path("RESPONSE").path("RESULT").get(0).path("TrainAnnouncement");
+        Set<String> codes = new LinkedHashSet<>();
+        for (JsonNode ann : announcements) {
+            String code = ann.path("LocationSignature").asText();
+            if (!code.isBlank()) codes.add(code);
+        }
+        System.out.println("Discovered Mälartåg stations: " + codes);
+        return codes.toArray(new String[0]);
+    }
+
     @Scheduled(fixedRate = 60_000)
     public void run() {
-        for (String station : stations) {
-            String response = requestTrainAnnouncements(station.trim());
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime from = now.minusMinutes(30);
+        OffsetDateTime endOfDay = now.plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+        for (String station : getStations()) {
+            String response = fetchAnnouncements(station.trim(), from, endOfDay, 100);
             if (response != null && !response.isEmpty()) {
                 fillDatabase(response);
             }
@@ -48,55 +100,55 @@ public class TrafikverketTask {
         stationService.invalidateCache();
     }
 
-    private String requestTrainAnnouncements(String station) {
+    public int importHistorical(int hours) {
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime from = now.minusHours(hours);
+        int totalSaved = 0;
+
+        for (String station : getStations()) {
+            String response = fetchAnnouncements(station.trim(), from, now, 1000);
+            if (response != null && !response.isEmpty()) {
+                totalSaved += fillDatabase(response);
+            }
+        }
+        stationService.invalidateCache();
+        return totalSaved;
+    }
+
+    private String fetchAnnouncements(String station, OffsetDateTime from, OffsetDateTime to, int limit) {
         String url = "https://api.trafikinfo.trafikverket.se/v2/data.json";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(new MediaType("text", "xml", StandardCharsets.UTF_8));
 
-        String api_key = System.getenv().getOrDefault("TRAFIKVERKET_API_KEY", "demokey");
-
-        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-        OffsetDateTime end = now.plusDays(1).withHour(0).withMinute(0).withSecond(0);
-
+        String apiKey = System.getenv().getOrDefault("TRAFIKVERKET_API_KEY", "demokey");
         DateTimeFormatter fmt = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
-        String from = now.format(fmt);
-        String to = end.format(fmt);
+        String fromStr = from.format(fmt);
+        String toStr = to.format(fmt);
 
-        String htmlBody = String.format("""
+        String body = String.format("""
                 <REQUEST>
                   <LOGIN authenticationkey="%s"/>
-                  <QUERY objecttype="TrainAnnouncement" schemaversion="1.9" limit="100">
+                  <QUERY objecttype="TrainAnnouncement" schemaversion="1.9" limit="%d">
                     <FILTER>
                       <AND>
                         <EQ name="InformationOwner" value="Mälardalstrafik AB" />
                         <EQ name="LocationSignature" value="%s" />
-                        <OR>
-                          <AND>
-                            <LT name="AdvertisedTimeAtLocation" value="%s" />
-                            <GT name="AdvertisedTimeAtLocation" value="%s" />
-                          </AND>
-                          <AND>
-                            <LT name="EstimatedTimeAtLocation" value="%s" />
-                            <GT name="EstimatedTimeAtLocation" value="%s" />
-                          </AND>
-                        </OR>
+                        <GT name="AdvertisedTimeAtLocation" value="%s" />
+                        <LT name="AdvertisedTimeAtLocation" value="%s" />
                       </AND>
                     </FILTER>
                   </QUERY>
-                </REQUEST>""", api_key, station, to, from, to, from);
+                </REQUEST>""", apiKey, limit, station, fromStr, toStr);
 
-        HttpEntity<String> request = new HttpEntity<>(htmlBody, headers);
-
+        HttpEntity<String> request = new HttpEntity<>(body, headers);
         return restTemplate.postForObject(url, request, String.class);
     }
 
-    private void fillDatabase(String response) {
+    private int fillDatabase(String response) {
         JsonNode root = JsonUtil.parseSafely(response);
-        if (root == null) {
-            return;
-        }
+        if (root == null) return 0;
 
         JsonNode announcements = root
                 .path("RESPONSE")
@@ -104,9 +156,12 @@ public class TrafikverketTask {
                 .get(0)
                 .path("TrainAnnouncement");
 
+        int count = 0;
         for (JsonNode announcement : announcements) {
             parseAnnouncement(announcement);
+            count++;
         }
+        return count;
     }
 
     private void parseAnnouncement(JsonNode announcement) {
@@ -137,28 +192,14 @@ public class TrafikverketTask {
             List<String> descriptions = new ArrayList<>();
             for (JsonNode d : deviationNode) {
                 String desc = d.path("Description").asText();
-                if (!desc.isBlank()) {
-                    descriptions.add(desc);
-                }
+                if (!desc.isBlank()) descriptions.add(desc);
             }
-            if (!descriptions.isEmpty()) {
-                deviation = String.join("; ", descriptions);
-            }
+            if (!descriptions.isEmpty()) deviation = String.join("; ", descriptions);
         }
 
-        TrainAnnouncement trainAnnouncement = new TrainAnnouncement(
-                activityId,
-                advertisedTimeAtLocation,
-                estimatedTimeAtLocation,
-                locationSignature,
-                advertisedTrainIden,
-                trackAtLocation,
-                toLocation,
-                activityType,
-                delayMinutes,
-                canceled,
-                deviation);
-
-        trainAnnouncementRepository.save(trainAnnouncement);
+        trainAnnouncementRepository.save(new TrainAnnouncement(
+                activityId, advertisedTimeAtLocation, estimatedTimeAtLocation,
+                locationSignature, advertisedTrainIden, trackAtLocation,
+                toLocation, activityType, delayMinutes, canceled, deviation));
     }
 }

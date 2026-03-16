@@ -34,6 +34,10 @@ public interface TrainAnnouncementRepository extends JpaRepository<TrainAnnounce
             @Param("type") String type,
             @Param("from") Instant from);
 
+    List<TrainAnnouncement> findByLocationSignature(String locationSignature);
+
+    List<TrainAnnouncement> findByLocationSignatureAndActivityType(String locationSignature, String activityType);
+
     @Query("SELECT DISTINCT t.locationSignature FROM TrainAnnouncement t ORDER BY t.locationSignature")
     List<String> findDistinctStations();
 

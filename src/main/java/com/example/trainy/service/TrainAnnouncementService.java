@@ -28,20 +28,33 @@ public class TrainAnnouncementService {
         return trainAnnouncementRepository.findAll();
     }
 
+    public List<TrainAnnouncement> getAllHistorical(String station, String type) {
+        if (station != null && type != null) {
+            return trainAnnouncementRepository.findByLocationSignatureAndActivityType(station, type);
+        }
+        if (station != null) {
+            return trainAnnouncementRepository.findByLocationSignature(station);
+        }
+        return trainAnnouncementRepository.findAll();
+    }
+
     public List<String> getStations() {
         return trainAnnouncementRepository.findDistinctStations();
     }
 
     public DelayStats getStats(String station, String type) {
-        List<TrainAnnouncement> all = getAll(station, type);
+        List<TrainAnnouncement> all = getAllHistorical(station, type);
 
         long totalCount = all.size();
-        long delayedCount = all.stream()
-                .filter(a -> a.getDelayMinutes() != null && a.getDelayMinutes() > 0)
+        long canceledCount = all.stream()
+                .filter(a -> Boolean.TRUE.equals(a.isCanceled()))
                 .count();
-        long onTimeCount = totalCount - delayedCount;
+        long delayedCount = all.stream()
+                .filter(a -> !Boolean.TRUE.equals(a.isCanceled()) && a.getDelayMinutes() != null && a.getDelayMinutes() > 0)
+                .count();
+        long onTimeCount = totalCount - canceledCount - delayedCount;
         double averageDelayMinutes = all.stream()
-                .filter(a -> a.getDelayMinutes() != null && a.getDelayMinutes() > 0)
+                .filter(a -> !Boolean.TRUE.equals(a.isCanceled()) && a.getDelayMinutes() != null && a.getDelayMinutes() > 0)
                 .mapToLong(TrainAnnouncement::getDelayMinutes)
                 .average()
                 .orElse(0.0);
@@ -51,6 +64,6 @@ public class TrainAnnouncementService {
                 .max()
                 .orElse(0L);
 
-        return new DelayStats(totalCount, delayedCount, onTimeCount, averageDelayMinutes, maxDelayMinutes);
+        return new DelayStats(totalCount, canceledCount, delayedCount, onTimeCount, averageDelayMinutes, maxDelayMinutes);
     }
 }

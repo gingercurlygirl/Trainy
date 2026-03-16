@@ -15,10 +15,14 @@ export default function App() {
   const [activityType, setActivityType] = useState('avgang')
   const [selectedDestination, setSelectedDestination] = useState('')
   const [trains, setTrains] = useState([])
+  const [historicalTrains, setHistoricalTrains] = useState([])
+  const [historicalStats, setHistoricalStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
   const [activeTab, setActiveTab] = useState('aktuellt')
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState(null)
 
   async function fetchStations() {
     try {
@@ -36,10 +40,21 @@ export default function App() {
     if (!station) return
     try {
       const params = new URLSearchParams({ station, type })
-      const res = await fetch(`/train_announcements?${params}`)
-      if (!res.ok) throw new Error('Serverfel')
-      const data = await res.json()
-      setTrains(data)
+      const historyParams = new URLSearchParams({ station, type, history: true })
+      const [trainsRes, historicalRes, statsRes] = await Promise.all([
+        fetch(`/train_announcements?${params}`),
+        fetch(`/train_announcements?${historyParams}`),
+        fetch(`/train_announcements/stats?${params}`),
+      ])
+      if (!trainsRes.ok || !historicalRes.ok || !statsRes.ok) throw new Error('Serverfel')
+      const [trainsData, historicalData, statsData] = await Promise.all([
+        trainsRes.json(),
+        historicalRes.json(),
+        statsRes.json(),
+      ])
+      setTrains(trainsData)
+      setHistoricalTrains(historicalData)
+      setHistoricalStats(statsData)
       setLastUpdated(new Date())
       setError(null)
     } catch (e) {
@@ -54,6 +69,7 @@ export default function App() {
   useEffect(() => {
     if (!selectedStation) return
     setTrains([])
+    setHistoricalTrains([])
     setSelectedDestination('')
     setLoading(true)
     fetchData(selectedStation, activityType)
@@ -66,6 +82,21 @@ export default function App() {
     return () => clearInterval(interval)
   }, [])
 
+  async function runImport(hours) {
+    setImporting(true)
+    setImportResult(null)
+    try {
+      const res = await fetch(`/train_announcements/import?hours=${hours}`, { method: 'POST' })
+      const data = await res.json()
+      setImportResult(`✓ Import klar — ${data.processed} avgångar hämtade (${hours}h)`)
+      fetchData(selectedStation, activityType)
+    } catch (e) {
+      setImportResult('Import misslyckades.')
+    } finally {
+      setImporting(false)
+    }
+  }
+
   const destinations = useMemo(() => {
     const unique = [...new Set(trains.map((t) => t.toLocation).filter(Boolean))]
     return unique.sort()
@@ -76,7 +107,12 @@ export default function App() {
     return trains.filter((t) => t.toLocation === selectedDestination)
   }, [trains, selectedDestination])
 
-  const stats = useMemo(() => computeStats(filteredTrains), [filteredTrains])
+  const filteredHistoricalTrains = useMemo(() => {
+    if (!selectedDestination) return historicalTrains
+    return historicalTrains.filter((t) => t.toLocation === selectedDestination)
+  }, [historicalTrains, selectedDestination])
+
+  const stats = historicalStats
 
   const typeLabel = activityType === 'avgang' ? 'avgångar' : 'ankomster'
 
@@ -104,6 +140,9 @@ export default function App() {
           <button onClick={() => fetchData(selectedStation, activityType)} style={styles.refreshBtn}>
             Uppdatera
           </button>
+          <button onClick={() => runImport(48)} disabled={importing} style={styles.importBtn}>
+            {importing ? 'Importerar...' : 'Hämta historik (48h)'}
+          </button>
         </div>
       </div>
 
@@ -121,6 +160,7 @@ export default function App() {
         />
       )}
 
+      {importResult && <div style={styles.importResult}>{importResult}</div>}
       {error && <div style={styles.error}>{error}</div>}
 
       {loading ? (
@@ -153,10 +193,10 @@ export default function App() {
 
           {activeTab === 'statistik' && (
             <div>
-              <DelayChart trains={filteredTrains} />
+              <DelayChart trains={filteredHistoricalTrains} />
               <div style={styles.chartGrid}>
-                <DelayByHourChart trains={filteredTrains} />
-                <DelayByTrainChart trains={filteredTrains} />
+                <DelayByHourChart trains={filteredHistoricalTrains} />
+                <DelayByTrainChart trains={filteredHistoricalTrains} />
               </div>
             </div>
           )}
@@ -164,19 +204,6 @@ export default function App() {
       )}
     </div>
   )
-}
-
-function computeStats(trains) {
-  const totalCount = trains.length
-  const canceledCount = trains.filter((t) => t.canceled === true).length
-  const delayedCount = trains.filter((t) => t.canceled !== true && t.delayMinutes != null && t.delayMinutes > 0).length
-  const onTimeCount = totalCount - delayedCount - canceledCount
-  const delays = trains
-    .filter((t) => t.canceled !== true && t.delayMinutes != null && t.delayMinutes > 0)
-    .map((t) => t.delayMinutes)
-  const averageDelayMinutes = delays.length > 0 ? delays.reduce((a, b) => a + b, 0) / delays.length : 0
-  const maxDelayMinutes = delays.length > 0 ? Math.max(...delays) : 0
-  return { totalCount, canceledCount, delayedCount, onTimeCount, averageDelayMinutes, maxDelayMinutes }
 }
 
 const styles = {
@@ -228,6 +255,25 @@ const styles = {
     background: '#fff',
     cursor: 'pointer',
     fontSize: '0.85rem',
+    fontWeight: '500',
+  },
+  importBtn: {
+    padding: '0.4rem 1rem',
+    borderRadius: '8px',
+    border: '1px solid #a5b4fc',
+    background: '#eef2ff',
+    color: '#4f46e5',
+    cursor: 'pointer',
+    fontSize: '0.85rem',
+    fontWeight: '500',
+  },
+  importResult: {
+    background: '#f0fdf4',
+    color: '#166534',
+    padding: '0.7rem 1rem',
+    borderRadius: '8px',
+    marginBottom: '1rem',
+    fontSize: '0.88rem',
     fontWeight: '500',
   },
   error: {
