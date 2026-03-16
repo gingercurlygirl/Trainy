@@ -13,7 +13,6 @@ export default function App() {
   const [activityType, setActivityType] = useState('avgang')
   const [selectedDestination, setSelectedDestination] = useState('')
   const [trains, setTrains] = useState([])
-  const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
@@ -34,17 +33,10 @@ export default function App() {
     if (!station) return
     try {
       const params = new URLSearchParams({ station, type })
-      const [trainsRes, statsRes] = await Promise.all([
-        fetch(`/train_announcements?${params}`),
-        fetch(`/train_announcements/stats?${params}`),
-      ])
-      if (!trainsRes.ok || !statsRes.ok) throw new Error('Serverfel')
-      const [trainsData, statsData] = await Promise.all([
-        trainsRes.json(),
-        statsRes.json(),
-      ])
-      setTrains(trainsData)
-      setStats(statsData)
+      const res = await fetch(`/train_announcements?${params}`)
+      if (!res.ok) throw new Error('Serverfel')
+      const data = await res.json()
+      setTrains(data)
       setLastUpdated(new Date())
       setError(null)
     } catch (e) {
@@ -61,7 +53,6 @@ export default function App() {
   useEffect(() => {
     if (!selectedStation) return
     setTrains([])
-    setStats(null)
     setSelectedDestination('')
     setLoading(true)
     fetchData(selectedStation, activityType)
@@ -84,6 +75,8 @@ export default function App() {
     if (!selectedDestination) return trains
     return trains.filter((t) => t.toLocation === selectedDestination)
   }, [trains, selectedDestination])
+
+  const stats = useMemo(() => computeStats(filteredTrains), [filteredTrains])
 
   const typeLabel = activityType === 'avgang' ? 'avgångar' : 'ankomster'
 
@@ -136,6 +129,16 @@ export default function App() {
       )}
     </div>
   )
+}
+
+function computeStats(trains) {
+  const totalCount = trains.length
+  const delayedCount = trains.filter((t) => t.delayMinutes != null && t.delayMinutes > 0).length
+  const onTimeCount = totalCount - delayedCount
+  const delays = trains.filter((t) => t.delayMinutes != null && t.delayMinutes > 0).map((t) => t.delayMinutes)
+  const averageDelayMinutes = delays.length > 0 ? delays.reduce((a, b) => a + b, 0) / delays.length : 0
+  const maxDelayMinutes = delays.length > 0 ? Math.max(...delays) : 0
+  return { totalCount, delayedCount, onTimeCount, averageDelayMinutes, maxDelayMinutes }
 }
 
 const styles = {
