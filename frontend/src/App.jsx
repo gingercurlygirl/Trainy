@@ -3,8 +3,11 @@ import StatsCards from './components/StatsCards'
 import DelayChart from './components/DelayChart'
 import DelayByHourChart from './components/DelayByHourChart'
 import DelayByTrainChart from './components/DelayByTrainChart'
+import DelayByWeekdayChart from './components/DelayByWeekdayChart'
+import DelayTrendChart from './components/DelayTrendChart'
 import TrainTable from './components/TrainTable'
 import StationSelector from './components/StationSelector'
+import Legend from './components/Legend'
 import { getStationName, populateStationMap } from './utils/stationNames'
 
 const REFRESH_INTERVAL = 60_000
@@ -140,8 +143,8 @@ export default function App() {
           <button onClick={() => fetchData(selectedStation, activityType)} style={styles.refreshBtn}>
             Uppdatera
           </button>
-          <button onClick={() => runImport(48)} disabled={importing} style={styles.importBtn}>
-            {importing ? 'Importerar...' : 'Hämta historik (48h)'}
+          <button onClick={() => runImport(96)} disabled={importing} style={styles.importBtn}>
+            {importing ? 'Importerar...' : 'Hämta historik (96h)'}
           </button>
         </div>
       </div>
@@ -193,11 +196,14 @@ export default function App() {
 
           {activeTab === 'statistik' && (
             <div>
+              <Legend />
+              <DelayTrendChart trains={filteredHistoricalTrains} />
               <DelayChart trains={filteredHistoricalTrains} />
               <div style={styles.chartGrid}>
                 <DelayByHourChart trains={filteredHistoricalTrains} />
                 <DelayByTrainChart trains={filteredHistoricalTrains} />
               </div>
+              <DelayByWeekdayChart trains={filteredHistoricalTrains} />
             </div>
           )}
         </>
