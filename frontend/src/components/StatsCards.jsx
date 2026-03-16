@@ -8,8 +8,9 @@ export default function StatsCards({ stats }) {
   const cards = [
     { label: 'Totalt antal avgångar', value: stats.totalCount, color: '#4f46e5' },
     { label: 'I tid', value: stats.onTimeCount, color: '#16a34a' },
-    { label: 'Försenade', value: stats.delayedCount, color: '#dc2626' },
-    { label: 'Andel försenade', value: `${delayPercent}%`, color: '#ea580c' },
+    { label: 'Försenade', value: stats.delayedCount, color: '#ea580c' },
+    { label: 'Inställda', value: stats.canceledCount, color: '#dc2626' },
+    { label: 'Andel försenade', value: `${delayPercent}%`, color: '#b45309' },
     { label: 'Snittförsening', value: `${stats.averageDelayMinutes.toFixed(1)} min`, color: '#7c3aed' },
     { label: 'Max försening', value: `${stats.maxDelayMinutes} min`, color: '#b91c1c' },
   ]

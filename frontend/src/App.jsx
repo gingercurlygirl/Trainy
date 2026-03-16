@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from 'react'
 import StatsCards from './components/StatsCards'
 import DelayChart from './components/DelayChart'
+import DelayByHourChart from './components/DelayByHourChart'
+import DelayByTrainChart from './components/DelayByTrainChart'
 import TrainTable from './components/TrainTable'
 import StationSelector from './components/StationSelector'
 import { getStationName, populateStationMap } from './utils/stationNames'
@@ -16,6 +18,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
+  const [activeTab, setActiveTab] = useState('aktuellt')
 
   async function fetchStations() {
     try {
@@ -46,9 +49,7 @@ export default function App() {
     }
   }
 
-  useEffect(() => {
-    fetchStations()
-  }, [])
+  useEffect(() => { fetchStations() }, [])
 
   useEffect(() => {
     if (!selectedStation) return
@@ -60,7 +61,6 @@ export default function App() {
     return () => clearInterval(interval)
   }, [selectedStation, activityType])
 
-  // Refresh station list every 60s to pick up new stations
   useEffect(() => {
     const interval = setInterval(fetchStations, REFRESH_INTERVAL)
     return () => clearInterval(interval)
@@ -82,9 +82,10 @@ export default function App() {
 
   return (
     <div>
+      {/* Header */}
       <div style={styles.header}>
         <div>
-          <h1>Mälartåg — Förseningsstatistik</h1>
+          <h1 style={styles.title}>Mälartåg</h1>
           <p style={styles.subtitle}>
             {selectedStation
               ? `${getStationName(selectedStation)} · ${typeLabel}${selectedDestination ? ` mot ${getStationName(selectedDestination)}` : ''}`
@@ -93,9 +94,12 @@ export default function App() {
         </div>
         <div style={styles.meta}>
           {lastUpdated && (
-            <span style={styles.updated}>
-              Uppdaterad {lastUpdated.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
-            </span>
+            <div style={styles.liveIndicator}>
+              <span style={styles.liveDot} />
+              <span style={styles.liveText}>
+                {lastUpdated.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
           )}
           <button onClick={() => fetchData(selectedStation, activityType)} style={styles.refreshBtn}>
             Uppdatera
@@ -103,6 +107,7 @@ export default function App() {
         </div>
       </div>
 
+      {/* Filters */}
       {stations.length > 0 && (
         <StationSelector
           stations={stations}
@@ -122,9 +127,39 @@ export default function App() {
         <div style={styles.loading}>Laddar data...</div>
       ) : (
         <>
+          {/* Stats always visible */}
           <StatsCards stats={stats} />
-          <DelayChart trains={filteredTrains} />
-          <TrainTable trains={filteredTrains} activityType={activityType} />
+
+          {/* Tabs */}
+          <div style={styles.tabs}>
+            <button
+              style={{ ...styles.tab, ...(activeTab === 'aktuellt' ? styles.tabActive : {}) }}
+              onClick={() => setActiveTab('aktuellt')}
+            >
+              Aktuella avgångar
+            </button>
+            <button
+              style={{ ...styles.tab, ...(activeTab === 'statistik' ? styles.tabActive : {}) }}
+              onClick={() => setActiveTab('statistik')}
+            >
+              Statistik
+            </button>
+          </div>
+
+          {/* Tab content */}
+          {activeTab === 'aktuellt' && (
+            <TrainTable trains={filteredTrains} activityType={activityType} />
+          )}
+
+          {activeTab === 'statistik' && (
+            <div>
+              <DelayChart trains={filteredTrains} />
+              <div style={styles.chartGrid}>
+                <DelayByHourChart trains={filteredTrains} />
+                <DelayByTrainChart trains={filteredTrains} />
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
@@ -133,12 +168,15 @@ export default function App() {
 
 function computeStats(trains) {
   const totalCount = trains.length
-  const delayedCount = trains.filter((t) => t.delayMinutes != null && t.delayMinutes > 0).length
-  const onTimeCount = totalCount - delayedCount
-  const delays = trains.filter((t) => t.delayMinutes != null && t.delayMinutes > 0).map((t) => t.delayMinutes)
+  const canceledCount = trains.filter((t) => t.canceled === true).length
+  const delayedCount = trains.filter((t) => t.canceled !== true && t.delayMinutes != null && t.delayMinutes > 0).length
+  const onTimeCount = totalCount - delayedCount - canceledCount
+  const delays = trains
+    .filter((t) => t.canceled !== true && t.delayMinutes != null && t.delayMinutes > 0)
+    .map((t) => t.delayMinutes)
   const averageDelayMinutes = delays.length > 0 ? delays.reduce((a, b) => a + b, 0) / delays.length : 0
   const maxDelayMinutes = delays.length > 0 ? Math.max(...delays) : 0
-  return { totalCount, delayedCount, onTimeCount, averageDelayMinutes, maxDelayMinutes }
+  return { totalCount, canceledCount, delayedCount, onTimeCount, averageDelayMinutes, maxDelayMinutes }
 }
 
 const styles = {
@@ -150,6 +188,10 @@ const styles = {
     flexWrap: 'wrap',
     gap: '0.5rem',
   },
+  title: {
+    fontSize: '1.7rem',
+    fontWeight: '700',
+  },
   subtitle: {
     color: '#888',
     marginTop: '0.3rem',
@@ -160,9 +202,24 @@ const styles = {
     alignItems: 'center',
     gap: '0.8rem',
   },
-  updated: {
+  liveIndicator: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+  },
+  liveDot: {
+    display: 'inline-block',
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    background: '#16a34a',
+    boxShadow: '0 0 0 2px #bbf7d0',
+    animation: 'pulse 2s infinite',
+  },
+  liveText: {
     fontSize: '0.82rem',
-    color: '#999',
+    color: '#16a34a',
+    fontWeight: '500',
   },
   refreshBtn: {
     padding: '0.4rem 1rem',
@@ -186,5 +243,33 @@ const styles = {
     padding: '4rem',
     color: '#888',
     fontSize: '1rem',
+  },
+  tabs: {
+    display: 'flex',
+    gap: '0.25rem',
+    marginBottom: '1.5rem',
+    borderBottom: '2px solid #e5e7eb',
+    paddingBottom: '0',
+  },
+  tab: {
+    padding: '0.6rem 1.2rem',
+    border: 'none',
+    background: 'transparent',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    fontWeight: '500',
+    color: '#888',
+    borderBottom: '2px solid transparent',
+    marginBottom: '-2px',
+    transition: 'all 0.15s',
+  },
+  tabActive: {
+    color: '#4f46e5',
+    borderBottom: '2px solid #4f46e5',
+  },
+  chartGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '1.5rem',
   },
 }

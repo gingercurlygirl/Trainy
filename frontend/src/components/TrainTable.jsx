@@ -48,7 +48,7 @@ export default function TrainTable({ trains, activityType }) {
                 {dayTrains.map((train) => {
                   const status = getStatus(train)
                   return (
-                    <tr key={train.activityId}>
+                    <tr key={train.activityId} style={getRowStyle(train)}>
                       <td style={styles.td}>{train.advertisedTrainIden}</td>
                       <td style={styles.td}>{train.toLocation ? getStationName(train.toLocation) : '—'}</td>
                       <td style={styles.td}>{formatTime(train.advertisedTimeAtLocation)}</td>
@@ -70,6 +70,12 @@ export default function TrainTable({ trains, activityType }) {
       ))}
     </div>
   )
+}
+
+function getRowStyle(train) {
+  if (train.canceled === true) return { background: '#fff1f2' }
+  if (train.delayMinutes != null && train.delayMinutes > 0) return { background: '#fffbeb' }
+  return {}
 }
 
 function getStatus(train) {
