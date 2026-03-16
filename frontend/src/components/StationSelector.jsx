@@ -1,6 +1,7 @@
-import { getStationName, MALARTAG_STATIONS } from '../utils/stationNames'
+import { getStationName } from '../utils/stationNames'
 
 export default function StationSelector({
+  stations,
   selectedStation,
   activityType,
   destinations,
@@ -18,7 +19,7 @@ export default function StationSelector({
           onChange={(e) => onStationChange(e.target.value)}
           style={styles.select}
         >
-          {MALARTAG_STATIONS.map((s) => (
+          {stations.map((s) => (
             <option key={s.code} value={s.code}>{s.name}</option>
           ))}
         </select>

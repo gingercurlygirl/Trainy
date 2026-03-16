@@ -3,6 +3,7 @@ package com.example.trainy.schedulers;
 import com.example.trainy.model.TrainAnnouncement;
 import com.example.trainy.repository.TrainAnnouncementRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.example.trainy.service.StationService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -25,13 +26,15 @@ public class TrafikverketTask {
 
     private final RestTemplate restTemplate;
     private final TrainAnnouncementRepository trainAnnouncementRepository;
+    private final StationService stationService;
 
     @Value("${trafikverket.stations}")
     private String[] stations;
 
-    public TrafikverketTask(RestTemplate restTemplate, TrainAnnouncementRepository trainAnnouncementRepository) {
+    public TrafikverketTask(RestTemplate restTemplate, TrainAnnouncementRepository trainAnnouncementRepository, StationService stationService) {
         this.restTemplate = restTemplate;
         this.trainAnnouncementRepository = trainAnnouncementRepository;
+        this.stationService = stationService;
     }
 
     @Scheduled(fixedRate = 60_000)
@@ -42,6 +45,7 @@ public class TrafikverketTask {
                 fillDatabase(response);
             }
         }
+        stationService.invalidateCache();
     }
 
     private String requestTrainAnnouncements(String station) {
@@ -155,8 +159,6 @@ public class TrafikverketTask {
                 canceled,
                 deviation);
 
-        if (trainAnnouncementRepository.findById(activityId).isEmpty()) {
-            trainAnnouncementRepository.save(trainAnnouncement);
-        }
+        trainAnnouncementRepository.save(trainAnnouncement);
     }
 }

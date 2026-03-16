@@ -1,6 +1,7 @@
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
+import { getStationName } from '../utils/stationNames'
 
 export default function DelayChart({ trains }) {
   if (!trains || trains.length === 0) return null
@@ -18,7 +19,7 @@ export default function DelayChart({ trains }) {
   }, {})
 
   const data = Object.entries(byDestination).map(([dest, val]) => ({
-    destination: dest,
+    destination: getStationName(dest),
     snittFörsening: val.delayed > 0 ? Math.round(val.total / val.delayed) : 0,
     antalFörsenade: val.delayed,
   })).sort((a, b) => b.snittFörsening - a.snittFörsening)

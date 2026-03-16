@@ -16,4 +16,7 @@ public interface TrainAnnouncementRepository extends JpaRepository<TrainAnnounce
 
     @Query("SELECT DISTINCT t.locationSignature FROM TrainAnnouncement t ORDER BY t.locationSignature")
     List<String> findDistinctStations();
+
+    @Query("SELECT DISTINCT t.toLocation FROM TrainAnnouncement t WHERE t.toLocation IS NOT NULL ORDER BY t.toLocation")
+    List<String> findDistinctToLocations();
 }

@@ -1,7 +1,9 @@
 package com.example.trainy.controller;
 
 import com.example.trainy.model.DelayStats;
+import com.example.trainy.model.StationInfo;
 import com.example.trainy.model.TrainAnnouncement;
+import com.example.trainy.service.StationService;
 import com.example.trainy.service.TrainAnnouncementService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,9 +18,11 @@ import java.util.List;
 public class TrainAnnouncementController {
 
     TrainAnnouncementService trainAnnouncementService;
+    StationService stationService;
 
-    public TrainAnnouncementController(TrainAnnouncementService trainAnnouncementService) {
+    public TrainAnnouncementController(TrainAnnouncementService trainAnnouncementService, StationService stationService) {
         this.trainAnnouncementService = trainAnnouncementService;
+        this.stationService = stationService;
     }
 
     @GetMapping()
@@ -36,7 +40,7 @@ public class TrainAnnouncementController {
     }
 
     @GetMapping("/stations")
-    public ResponseEntity<List<String>> getStations() {
-        return ResponseEntity.ok(trainAnnouncementService.getStations());
+    public ResponseEntity<List<StationInfo>> getStations() {
+        return ResponseEntity.ok(stationService.getAllStations());
     }
 }

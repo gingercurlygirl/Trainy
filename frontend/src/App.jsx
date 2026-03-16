@@ -3,12 +3,13 @@ import StatsCards from './components/StatsCards'
 import DelayChart from './components/DelayChart'
 import TrainTable from './components/TrainTable'
 import StationSelector from './components/StationSelector'
-import { getStationName, MALARTAG_STATIONS } from './utils/stationNames'
+import { getStationName, populateStationMap } from './utils/stationNames'
 
 const REFRESH_INTERVAL = 60_000
 
 export default function App() {
-  const [selectedStation, setSelectedStation] = useState(MALARTAG_STATIONS[0].code)
+  const [stations, setStations] = useState([])
+  const [selectedStation, setSelectedStation] = useState(null)
   const [activityType, setActivityType] = useState('avgang')
   const [selectedDestination, setSelectedDestination] = useState('')
   const [trains, setTrains] = useState([])
@@ -16,6 +17,18 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
+
+  async function fetchStations() {
+    try {
+      const res = await fetch('/train_announcements/stations')
+      const data = await res.json()
+      populateStationMap(data)
+      setStations(data)
+      setSelectedStation((prev) => prev ?? data[0]?.code ?? null)
+    } catch (e) {
+      setError('Kunde inte hämta stationer.')
+    }
+  }
 
   async function fetchData(station, type) {
     if (!station) return
@@ -42,6 +55,10 @@ export default function App() {
   }
 
   useEffect(() => {
+    fetchStations()
+  }, [])
+
+  useEffect(() => {
     if (!selectedStation) return
     setTrains([])
     setStats(null)
@@ -52,13 +69,17 @@ export default function App() {
     return () => clearInterval(interval)
   }, [selectedStation, activityType])
 
-  // Unique destinations from loaded trains
+  // Refresh station list every 60s to pick up new stations
+  useEffect(() => {
+    const interval = setInterval(fetchStations, REFRESH_INTERVAL)
+    return () => clearInterval(interval)
+  }, [])
+
   const destinations = useMemo(() => {
     const unique = [...new Set(trains.map((t) => t.toLocation).filter(Boolean))]
     return unique.sort()
   }, [trains])
 
-  // Filter trains by destination if selected
   const filteredTrains = useMemo(() => {
     if (!selectedDestination) return trains
     return trains.filter((t) => t.toLocation === selectedDestination)
@@ -89,7 +110,9 @@ export default function App() {
         </div>
       </div>
 
-      <StationSelector
+      {stations.length > 0 && (
+        <StationSelector
+          stations={stations}
           selectedStation={selectedStation}
           activityType={activityType}
           destinations={destinations}
@@ -98,6 +121,7 @@ export default function App() {
           onTypeChange={setActivityType}
           onDestinationChange={setSelectedDestination}
         />
+      )}
 
       {error && <div style={styles.error}>{error}</div>}
 
