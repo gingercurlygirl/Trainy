@@ -9,7 +9,10 @@ function getWeekStart(dateStr) {
   const day = local.getDay() // 0=Sun
   const diff = (day === 0 ? -6 : 1 - day) // shift to Monday
   local.setDate(local.getDate() + diff)
-  return local.toISOString().slice(0, 10)
+  const y = local.getFullYear()
+  const mo = String(local.getMonth() + 1).padStart(2, '0')
+  const dy = String(local.getDate()).padStart(2, '0')
+  return `${y}-${mo}-${dy}`
 }
 
 function formatWeekLabel(isoDate) {
