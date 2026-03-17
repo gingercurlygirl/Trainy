@@ -19,8 +19,9 @@ public class TrainAnnouncementService {
 
     public List<TrainAnnouncement> getAll(String station, String type) {
         Instant now = Instant.now();
-        if (station != null && type != null) {
-            return trainAnnouncementRepository.findByLocationSignatureAndActivityTypeFromTime(station, type, now);
+        String normalizedType = normalize(type);
+        if (station != null && normalizedType != null) {
+            return trainAnnouncementRepository.findByLocationSignatureAndActivityTypeFromTime(station, normalizedType, now);
         }
         if (station != null) {
             return trainAnnouncementRepository.findByLocationSignatureFromTime(station, now);
@@ -29,13 +30,19 @@ public class TrainAnnouncementService {
     }
 
     public List<TrainAnnouncement> getAllHistorical(String station, String type) {
-        if (station != null && type != null) {
-            return trainAnnouncementRepository.findByLocationSignatureAndActivityType(station, type);
+        String normalizedType = normalize(type);
+        if (station != null && normalizedType != null) {
+            return trainAnnouncementRepository.findByLocationSignatureAndActivityType(station, normalizedType);
         }
         if (station != null) {
             return trainAnnouncementRepository.findByLocationSignature(station);
         }
         return trainAnnouncementRepository.findAll();
+    }
+
+    private String normalize(String type) {
+        if (type == null) return null;
+        return Character.toUpperCase(type.charAt(0)) + type.substring(1).toLowerCase();
     }
 
     public List<String> getStations() {
