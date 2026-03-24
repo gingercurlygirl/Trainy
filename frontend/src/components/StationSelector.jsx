@@ -108,7 +108,7 @@ const styles = {
     transition: 'all 0.15s',
   },
   active: {
-    background: '#4f46e5',
+    background: '#1a5c38',
     color: '#fff',
   },
 }

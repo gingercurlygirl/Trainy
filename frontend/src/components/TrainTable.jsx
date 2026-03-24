@@ -9,7 +9,13 @@ export default function TrainTable({ trains, activityType }) {
   const [page, setPage] = useState(1)
 
   if (!trains || trains.length === 0) {
-    return <div style={styles.empty}>Inga avgångar hittades.</div>
+    return (
+      <div style={styles.empty}>
+        <div style={styles.emptyIcon}>🚉</div>
+        <div style={styles.emptyTitle}>Inga tåg hittades</div>
+        <div style={styles.emptyText}>Det finns ingen trafikdata för vald station och tidsperiod.</div>
+      </div>
+    )
   }
 
   function handleSort(col) {
@@ -226,7 +232,7 @@ const styles = {
     whiteSpace: 'nowrap',
   },
   sortArrow: {
-    color: '#4f46e5',
+    color: '#1a5c38',
     fontWeight: '700',
   },
   td: {
@@ -238,11 +244,11 @@ const styles = {
     padding: '0.6rem 0.8rem',
     fontSize: '0.78rem',
     fontWeight: '700',
-    color: '#4f46e5',
+    color: '#1a5c38',
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
-    background: '#f5f3ff',
-    borderBottom: '1px solid #e0e7ff',
+    background: '#f0fdf4',
+    borderBottom: '1px solid #bbf7d0',
   },
   badge: {
     display: 'inline-block',
@@ -254,9 +260,23 @@ const styles = {
   empty: {
     background: '#fff',
     borderRadius: '12px',
-    padding: '2rem',
+    padding: '3rem 2rem',
     textAlign: 'center',
-    color: '#888',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+  },
+  emptyIcon: {
+    fontSize: '2.5rem',
+    marginBottom: '0.75rem',
+  },
+  emptyTitle: {
+    fontSize: '1rem',
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: '0.4rem',
+  },
+  emptyText: {
+    fontSize: '0.88rem',
+    color: '#9ca3af',
   },
   pagination: {
     display: 'flex',

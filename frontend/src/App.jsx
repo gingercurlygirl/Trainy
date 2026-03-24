@@ -9,6 +9,7 @@ import DelayTrendChart from './components/DelayTrendChart'
 import TrainTable from './components/TrainTable'
 import StationSelector from './components/StationSelector'
 import Legend from './components/Legend'
+import HeroSection from './components/HeroSection'
 import { getStationName, populateStationMap } from './utils/stationNames'
 
 const REFRESH_INTERVAL = 60_000
@@ -157,32 +158,23 @@ export default function App() {
 
   return (
     <div>
+      <HeroSection />
+
       {/* Header */}
       <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>Mälartåg</h1>
-          <p style={styles.subtitle}>
-            {selectedStation
-              ? `${getStationName(selectedStation)} · ${typeLabel}${selectedDestination ? ` mot ${getStationName(selectedDestination)}` : ''}`
-              : 'Laddar stationer...'}
-          </p>
-        </div>
-        <div style={styles.meta}>
-          {lastUpdated && (
-            <div style={styles.liveIndicator}>
-              <span style={styles.liveDot} />
-              <span style={styles.liveText}>
-                {lastUpdated.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-          )}
-          <button onClick={() => fetchData(selectedStation, activityType)} style={styles.refreshBtn}>
-            Uppdatera
-          </button>
-          <button onClick={() => runImport(96)} disabled={importing} style={styles.importBtn}>
-            {importing ? 'Importerar...' : 'Hämta historik (96h)'}
-          </button>
-        </div>
+        <p style={styles.subtitle}>
+          {selectedStation
+            ? `${getStationName(selectedStation)} · ${typeLabel}${selectedDestination ? ` mot ${getStationName(selectedDestination)}` : ''}`
+            : 'Laddar stationer...'}
+        </p>
+        {lastUpdated && (
+          <div style={styles.liveIndicator}>
+            <span style={styles.liveDot} />
+            <span style={styles.liveText}>
+              {lastUpdated.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -249,11 +241,11 @@ export default function App() {
               <Legend />
               <DelayTrendChart trains={filteredHistoricalTrains} />
               <DelayChart trains={filteredHistoricalTrains} />
-              <div style={styles.chartGrid}>
+              <div className="chart-grid">
                 <DelayByHourChart trains={filteredHistoricalTrains} />
                 <DelayByTrainChart trains={filteredHistoricalTrains} />
               </div>
-              <div style={styles.chartGrid}>
+              <div className="chart-grid">
                 <DelayByWeekdayChart trains={filteredHistoricalTrains} />
                 <DeviationChart trains={filteredHistoricalTrains} />
               </div>
@@ -369,8 +361,8 @@ const styles = {
     transition: 'all 0.15s',
   },
   tabActive: {
-    color: '#4f46e5',
-    borderBottom: '2px solid #4f46e5',
+    color: '#1a5c38',
+    borderBottom: '2px solid #1a5c38',
   },
   statsLayout: {
     display: 'flex',
