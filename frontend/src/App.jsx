@@ -8,7 +8,7 @@ import DeviationChart from './components/DeviationChart'
 import DelayTrendChart from './components/DelayTrendChart'
 import TrainTable from './components/TrainTable'
 import StationSelector from './components/StationSelector'
-import Legend from './components/Legend'
+import { TrendLegend, BarLegend } from './components/Legend'
 import HeroSection from './components/HeroSection'
 import { getStationName, populateStationMap } from './utils/stationNames'
 
@@ -238,8 +238,9 @@ export default function App() {
                   </button>
                 )}
               </div>
-              <Legend />
+              <TrendLegend />
               <DelayTrendChart trains={filteredHistoricalTrains} />
+              <BarLegend />
               <DelayChart trains={filteredHistoricalTrains} />
               <div className="chart-grid">
                 <DelayByHourChart trains={filteredHistoricalTrains} />

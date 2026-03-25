@@ -6,20 +6,22 @@ export default function StatsCards({ stats }) {
     : 0
 
   const cards = [
-    { label: 'Totalt antal tåg', value: stats.totalCount, color: '#1a5c38', bg: '#f0fdf4', icon: '🚆' },
-    { label: 'I tid', value: stats.onTimeCount, color: '#16a34a', bg: '#f0fdf4', icon: '✅' },
-    { label: 'Försenade', value: stats.delayedCount, color: '#ea580c', bg: '#fff7ed', icon: '⏱️' },
-    { label: 'Inställda', value: stats.canceledCount, color: '#dc2626', bg: '#fff1f2', icon: '❌' },
-    { label: 'Andel försenade', value: `${delayPercent}%`, color: '#b45309', bg: '#fffbeb', icon: '📊' },
-    { label: 'Snittförsening', value: `${stats.averageDelayMinutes.toFixed(1)} min`, color: '#7c3aed', bg: '#faf5ff', icon: '📈' },
-    { label: 'Max försening', value: `${stats.maxDelayMinutes} min`, color: '#b91c1c', bg: '#fff1f2', icon: '⚠️' },
+    { label: 'Totalt antal tåg', value: stats.totalCount, color: '#1a5c38', iconBg: '#dcfce7', icon: '🚆' },
+    { label: 'I tid', value: stats.onTimeCount, color: '#16a34a', iconBg: '#dcfce7', icon: '✓' },
+    { label: 'Försenade', value: stats.delayedCount, color: '#ea580c', iconBg: '#ffedd5', icon: '⏱' },
+    { label: 'Inställda', value: stats.canceledCount, color: '#dc2626', iconBg: '#fee2e2', icon: '✕' },
+    { label: 'Andel försenade', value: `${delayPercent}%`, color: '#b45309', iconBg: '#fef3c7', icon: '%' },
+    { label: 'Snittförsening', value: `${stats.averageDelayMinutes.toFixed(1)} min`, color: '#7c3aed', iconBg: '#ede9fe', icon: '∅' },
+    { label: 'Max försening', value: `${stats.maxDelayMinutes} min`, color: '#b91c1c', iconBg: '#fee2e2', icon: '↑' },
   ]
 
   return (
     <div className="stats-grid">
       {cards.map((card) => (
-        <div key={card.label} style={{ ...styles.card, background: card.bg }}>
-          <div style={styles.icon}>{card.icon}</div>
+        <div key={card.label} style={styles.card}>
+          <div style={{ ...styles.iconCircle, background: card.iconBg, color: card.color }}>
+            {card.icon}
+          </div>
           <div style={{ ...styles.value, color: card.color }}>{card.value}</div>
           <div style={styles.label}>{card.label}</div>
         </div>
@@ -30,24 +32,50 @@ export default function StatsCards({ stats }) {
 
 const styles = {
   card: {
+    background: '#fff',
     borderRadius: '14px',
-    padding: '1.2rem 1rem',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-    textAlign: 'center',
+    padding: '1rem',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.25rem',
   },
-  icon: {
-    fontSize: '1.4rem',
-    marginBottom: '0.4rem',
+  iconCircle: {
+    width: '34px',
+    height: '34px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '0.95rem',
+    fontWeight: '700',
+    marginBottom: '0.2rem',
   },
   value: {
-    fontSize: '1.8rem',
-    fontWeight: '700',
-    marginBottom: '0.3rem',
+    fontSize: '1.6rem',
+    fontWeight: '800',
+    lineHeight: 1,
+    letterSpacing: '-0.02em',
   },
   label: {
-    fontSize: '0.78rem',
-    color: '#6b7280',
+    fontSize: '0.73rem',
+    color: '#9ca3af',
     textTransform: 'uppercase',
-    letterSpacing: '0.05em',
+    letterSpacing: '0.06em',
+    textAlign: 'center',
+  },
+  bar: {
+    width: '100%',
+    height: '3px',
+    borderRadius: '999px',
+    marginTop: '0.6rem',
+    overflow: 'hidden',
+  },
+  barFill: {
+    width: '40%',
+    height: '100%',
+    borderRadius: '999px',
+    opacity: 0.6,
   },
 }

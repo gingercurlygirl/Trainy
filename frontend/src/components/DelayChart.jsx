@@ -40,7 +40,7 @@ export default function DelayChart({ trains }) {
           />
           <Bar dataKey="snittFörsening" radius={[6, 6, 0, 0]}>
             {data.map((entry, index) => (
-              <Cell key={index} fill={entry.snittFörsening > 10 ? '#dc2626' : '#4f46e5'} />
+              <Cell key={index} fill={entry.snittFörsening > 10 ? '#dc2626' : '#1a5c38'} />
             ))}
           </Bar>
         </BarChart>

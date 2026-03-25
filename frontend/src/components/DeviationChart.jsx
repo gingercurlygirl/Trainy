@@ -2,7 +2,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
 
-const COLORS = ['#4f46e5', '#7c3aed', '#a21caf', '#be185d', '#dc2626', '#ea580c', '#d97706', '#65a30d', '#0891b2', '#0284c7']
+const COLORS = ['#1a5c38', '#7c3aed', '#a21caf', '#be185d', '#dc2626', '#ea580c', '#d97706', '#65a30d', '#0891b2', '#0284c7']
 
 export default function DeviationChart({ trains }) {
   if (!trains || trains.length === 0) return null

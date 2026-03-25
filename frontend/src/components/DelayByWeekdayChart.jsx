@@ -62,7 +62,7 @@ export default function DelayByWeekdayChart({ trains }) {
               {data.map((entry, index) => (
                 <Cell
                   key={index}
-                  fill={entry.snittFörsening > 10 ? '#dc2626' : entry.snittFörsening > 5 ? '#ea580c' : '#4f46e5'}
+                  fill={entry.snittFörsening > 10 ? '#dc2626' : entry.snittFörsening > 5 ? '#ea580c' : '#1a5c38'}
                 />
               ))}
             </Bar>

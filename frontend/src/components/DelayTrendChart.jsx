@@ -83,7 +83,7 @@ export default function DelayTrendChart({ trains }) {
                 <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem 1rem', fontSize: '0.85rem', lineHeight: '1.6' }}>
                   <div style={{ fontWeight: '700', marginBottom: '0.3rem' }}>Vecka fr. {label}</div>
                   <div style={{ color: '#6b7280' }}>Totalt: {d.antalTåg} tåg</div>
-                  <div style={{ color: '#4f46e5' }}>Försenade: {d.försenadeProcent}% ({försenade} tåg)</div>
+                  <div style={{ color: '#1a5c38' }}>Försenade: {d.försenadeProcent}% ({försenade} tåg)</div>
                   <div style={{ color: '#dc2626' }}>Inställda: {d.inställdaProcent}% ({inställda} tåg)</div>
                 </div>
               )
@@ -94,7 +94,7 @@ export default function DelayTrendChart({ trains }) {
             type="monotone"
             dataKey="försenadeProcent"
             name="Försenade %"
-            stroke="#4f46e5"
+            stroke="#1a5c38"
             strokeWidth={2}
             dot={{ r: 4 }}
             activeDot={{ r: 6 }}
