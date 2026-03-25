@@ -41,6 +41,13 @@ h2 {
   margin-bottom: 2rem;
 }
 
+.stats-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.75rem;
+  margin-bottom: 2rem;
+}
+
 .chart-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -50,6 +57,10 @@ h2 {
 @media (max-width: 768px) {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stats-cards-grid {
+    grid-template-columns: 1fr;
   }
 
   .chart-grid {

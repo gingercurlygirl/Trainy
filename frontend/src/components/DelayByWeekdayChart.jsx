@@ -10,11 +10,6 @@ export default function DelayByWeekdayChart({ trains }) {
   const byDay = Array.from({ length: 7 }, () => ({ total: 0, delayed: 0, count: 0 }))
 
   trains.forEach((train) => {
-    const day = new Date(train.advertisedTimeAtLocation).toLocaleDateString('sv-SE', {
-      weekday: 'long',
-      timeZone: 'Europe/Stockholm',
-    })
-    // toLocaleDateString returns Swedish weekday name, map to index via Date
     const d = new Date(train.advertisedTimeAtLocation)
     const idx = new Intl.DateTimeFormat('sv-SE', { weekday: 'long', timeZone: 'Europe/Stockholm' })
       .format(d)

@@ -267,19 +267,10 @@ const styles = {
     flexWrap: 'wrap',
     gap: '0.5rem',
   },
-  title: {
-    fontSize: '1.7rem',
-    fontWeight: '700',
-  },
   subtitle: {
     color: '#888',
     marginTop: '0.3rem',
     fontSize: '0.9rem',
-  },
-  meta: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.8rem',
   },
   liveIndicator: {
     display: 'flex',
@@ -298,25 +289,6 @@ const styles = {
   liveText: {
     fontSize: '0.82rem',
     color: '#16a34a',
-    fontWeight: '500',
-  },
-  refreshBtn: {
-    padding: '0.4rem 1rem',
-    borderRadius: '8px',
-    border: '1px solid #d1d5db',
-    background: '#fff',
-    cursor: 'pointer',
-    fontSize: '0.85rem',
-    fontWeight: '500',
-  },
-  importBtn: {
-    padding: '0.4rem 1rem',
-    borderRadius: '8px',
-    border: '1px solid #a5b4fc',
-    background: '#eef2ff',
-    color: '#4f46e5',
-    cursor: 'pointer',
-    fontSize: '0.85rem',
     fontWeight: '500',
   },
   importResult: {

@@ -65,14 +65,6 @@ export default function DelayTrendChart({ trains }) {
           <XAxis dataKey="vecka" tick={{ fontSize: 11 }} />
           <YAxis tick={{ fontSize: 12 }} unit="%" />
           <Tooltip
-            formatter={(value, name) => {
-              const d = data.find((x) => x.vecka === name || true)
-              if (name === 'försenadeProcent') {
-                const entry = data.find((x) => x.försenadeProcent === value || x.vecka)
-                return null
-              }
-              return [`${value}%`, name]
-            }}
             content={({ active, payload, label }) => {
               if (!active || !payload || !payload.length) return null
               const d = data.find((x) => x.vecka === label)

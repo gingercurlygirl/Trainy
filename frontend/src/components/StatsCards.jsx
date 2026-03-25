@@ -37,7 +37,7 @@ export default function StatsCards({ stats }) {
   ]
 
   return (
-    <div style={styles.grid}>
+    <div className="stats-cards-grid">
       {groups.map((group) => (
         <div key={group.title} style={{ ...styles.card, borderTop: `3px solid ${group.border}` }}>
           <div style={{ ...styles.groupTitle, color: group.color }}>{group.title}</div>
