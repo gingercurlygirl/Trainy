@@ -16,9 +16,9 @@ import java.util.Map;
 @RestController
 public class TrainAnnouncementController {
 
-    TrainAnnouncementService trainAnnouncementService;
-    StationService stationService;
-    TrafikverketTask trafikverketTask;
+    private final TrainAnnouncementService trainAnnouncementService;
+    private final StationService stationService;
+    private final TrafikverketTask trafikverketTask;
 
     public TrainAnnouncementController(TrainAnnouncementService trainAnnouncementService, StationService stationService, TrafikverketTask trafikverketTask) {
         this.trainAnnouncementService = trainAnnouncementService;

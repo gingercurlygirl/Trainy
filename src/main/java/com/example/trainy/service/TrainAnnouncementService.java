@@ -8,10 +8,11 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 
+
 @Service
 public class TrainAnnouncementService {
 
-    TrainAnnouncementRepository trainAnnouncementRepository;
+    private final TrainAnnouncementRepository trainAnnouncementRepository;
 
     public TrainAnnouncementService(TrainAnnouncementRepository trainAnnouncementRepository) {
         this.trainAnnouncementRepository = trainAnnouncementRepository;
@@ -50,27 +51,15 @@ public class TrainAnnouncementService {
     }
 
     public DelayStats getStats(String station, String type) {
-        List<TrainAnnouncement> all = getAllHistorical(station, type);
-
-        long totalCount = all.size();
-        long canceledCount = all.stream()
-                .filter(a -> Boolean.TRUE.equals(a.isCanceled()))
-                .count();
-        long delayedCount = all.stream()
-                .filter(a -> !Boolean.TRUE.equals(a.isCanceled()) && a.getDelayMinutes() != null && a.getDelayMinutes() > 0)
-                .count();
+        String normalizedType = normalize(type);
+        long totalCount = trainAnnouncementRepository.countByStationAndType(station, normalizedType);
+        long canceledCount = trainAnnouncementRepository.countCanceledByStationAndType(station, normalizedType);
+        long delayedCount = trainAnnouncementRepository.countDelayedByStationAndType(station, normalizedType);
         long onTimeCount = totalCount - canceledCount - delayedCount;
-        double averageDelayMinutes = all.stream()
-                .filter(a -> !Boolean.TRUE.equals(a.isCanceled()) && a.getDelayMinutes() != null && a.getDelayMinutes() > 0)
-                .mapToLong(TrainAnnouncement::getDelayMinutes)
-                .average()
-                .orElse(0.0);
-        long maxDelayMinutes = all.stream()
-                .filter(a -> a.getDelayMinutes() != null)
-                .mapToLong(TrainAnnouncement::getDelayMinutes)
-                .max()
-                .orElse(0L);
-
+        Double avg = trainAnnouncementRepository.avgDelayByStationAndType(station, normalizedType);
+        double averageDelayMinutes = avg != null ? avg : 0.0;
+        Long max = trainAnnouncementRepository.maxDelayByStationAndType(station, normalizedType);
+        long maxDelayMinutes = max != null ? max : 0L;
         return new DelayStats(totalCount, canceledCount, delayedCount, onTimeCount, averageDelayMinutes, maxDelayMinutes);
     }
 }

@@ -20,14 +20,14 @@ public class StationService {
     private final RestTemplate restTemplate;
     private final TrainAnnouncementRepository repository;
 
-    private volatile List<StationInfo> cache = null;
+    private List<StationInfo> cache = null;
 
     public StationService(RestTemplate restTemplate, TrainAnnouncementRepository repository) {
         this.restTemplate = restTemplate;
         this.repository = repository;
     }
 
-    public List<StationInfo> getAllStations() {
+    public synchronized List<StationInfo> getAllStations() {
         if (cache != null) {
             return cache;
         }
@@ -45,7 +45,7 @@ public class StationService {
         return cache;
     }
 
-    public void invalidateCache() {
+    public synchronized void invalidateCache() {
         cache = null;
     }
 
@@ -76,7 +76,12 @@ public class StationService {
                 </REQUEST>""", apiKey, eqNodes);
 
         HttpEntity<String> request = new HttpEntity<>(body, headers);
-        return restTemplate.postForObject(url, request, String.class);
+        try {
+            return restTemplate.postForObject(url, request, String.class);
+        } catch (Exception e) {
+            System.err.println("Trafikverket station API error: " + e.getMessage());
+            return null;
+        }
     }
 
     private List<StationInfo> parseResponse(String response) {

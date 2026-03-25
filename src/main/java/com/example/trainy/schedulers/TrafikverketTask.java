@@ -29,7 +29,7 @@ public class TrafikverketTask {
     private final TrainAnnouncementRepository trainAnnouncementRepository;
     private final StationService stationService;
 
-    private volatile String[] discoveredStations = null;
+    private String[] discoveredStations = null;
 
     public TrafikverketTask(RestTemplate restTemplate, TrainAnnouncementRepository trainAnnouncementRepository, StationService stationService) {
         this.restTemplate = restTemplate;
@@ -37,7 +37,7 @@ public class TrafikverketTask {
         this.stationService = stationService;
     }
 
-    private String[] getStations() {
+    private synchronized String[] getStations() {
         if (discoveredStations == null) {
             discoveredStations = discoverStationCodes();
         }
@@ -70,7 +70,13 @@ public class TrafikverketTask {
                 </REQUEST>""", apiKey, from.format(fmt), now.format(fmt));
 
         HttpEntity<String> request = new HttpEntity<>(body, headers);
-        String response = restTemplate.postForObject(url, request, String.class);
+        String response;
+        try {
+            response = restTemplate.postForObject(url, request, String.class);
+        } catch (Exception e) {
+            System.err.println("Failed to discover station codes: " + e.getMessage());
+            return new String[0];
+        }
 
         JsonNode root = JsonUtil.parseSafely(response);
         if (root == null) return new String[0];
@@ -87,17 +93,21 @@ public class TrafikverketTask {
 
     @Scheduled(fixedRate = 60_000)
     public void run() {
-        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-        OffsetDateTime from = now.minusMinutes(30);
-        OffsetDateTime endOfDay = now.plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        try {
+            OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+            OffsetDateTime from = now.minusMinutes(30);
+            OffsetDateTime endOfDay = now.plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
 
-        for (String station : getStations()) {
-            String response = fetchAnnouncements(station.trim(), from, endOfDay, 100);
-            if (response != null && !response.isEmpty()) {
-                fillDatabase(response);
+            for (String station : getStations()) {
+                String response = fetchAnnouncements(station.trim(), from, endOfDay, 100);
+                if (response != null && !response.isEmpty()) {
+                    fillDatabase(response);
+                }
             }
+            stationService.invalidateCache();
+        } catch (Exception e) {
+            System.err.println("Scheduler run failed: " + e.getMessage());
         }
-        stationService.invalidateCache();
     }
 
     public int importHistorical(int hours) {
@@ -143,7 +153,12 @@ public class TrafikverketTask {
                 </REQUEST>""", apiKey, limit, station, fromStr, toStr);
 
         HttpEntity<String> request = new HttpEntity<>(body, headers);
-        return restTemplate.postForObject(url, request, String.class);
+        try {
+            return restTemplate.postForObject(url, request, String.class);
+        } catch (Exception e) {
+            System.err.println("Trafikverket API error for station " + station + ": " + e.getMessage());
+            return null;
+        }
     }
 
     private int fillDatabase(String response) {

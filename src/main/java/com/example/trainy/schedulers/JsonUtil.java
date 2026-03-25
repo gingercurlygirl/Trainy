@@ -15,8 +15,8 @@ public class JsonUtil {
         try {
             return MAPPER.readTree(json);
         } catch (Exception e) {
-            // log, wrap, or rethrow depending on your needs
-            throw new IllegalArgumentException("Invalid JSON input", e);
+            System.err.println("Failed to parse JSON response: " + e.getMessage());
+            return null;
         }
     }
 }

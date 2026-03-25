@@ -43,4 +43,19 @@ public interface TrainAnnouncementRepository extends JpaRepository<TrainAnnounce
 
     @Query("SELECT DISTINCT t.toLocation FROM TrainAnnouncement t WHERE t.toLocation IS NOT NULL ORDER BY t.toLocation")
     List<String> findDistinctToLocations();
+
+    @Query("SELECT COUNT(t) FROM TrainAnnouncement t WHERE t.locationSignature = :station AND t.activityType = :type")
+    long countByStationAndType(@Param("station") String station, @Param("type") String type);
+
+    @Query("SELECT COUNT(t) FROM TrainAnnouncement t WHERE t.locationSignature = :station AND t.activityType = :type AND t.canceled = true")
+    long countCanceledByStationAndType(@Param("station") String station, @Param("type") String type);
+
+    @Query("SELECT COUNT(t) FROM TrainAnnouncement t WHERE t.locationSignature = :station AND t.activityType = :type AND (t.canceled IS NULL OR t.canceled = false) AND t.delayMinutes IS NOT NULL AND t.delayMinutes > 0")
+    long countDelayedByStationAndType(@Param("station") String station, @Param("type") String type);
+
+    @Query("SELECT AVG(t.delayMinutes) FROM TrainAnnouncement t WHERE t.locationSignature = :station AND t.activityType = :type AND (t.canceled IS NULL OR t.canceled = false) AND t.delayMinutes IS NOT NULL AND t.delayMinutes > 0")
+    Double avgDelayByStationAndType(@Param("station") String station, @Param("type") String type);
+
+    @Query("SELECT MAX(t.delayMinutes) FROM TrainAnnouncement t WHERE t.locationSignature = :station AND t.activityType = :type")
+    Long maxDelayByStationAndType(@Param("station") String station, @Param("type") String type);
 }
