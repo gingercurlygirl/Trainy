@@ -89,7 +89,7 @@ export default function App() {
     const dates = historicalTrains
       .map((t) => new Date(t.advertisedTimeAtLocation))
       .sort((a, b) => a - b)
-    // Find largest gap between consecutive days
+    // Find last gap larger than 7 days
     let gapAfter = null
     for (let i = 1; i < dates.length; i++) {
       const diffDays = (dates[i] - dates[i - 1]) / (1000 * 60 * 60 * 24)

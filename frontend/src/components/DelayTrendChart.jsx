@@ -1,57 +1,75 @@
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine,
 } from 'recharts'
 
-function getWeekStart(dateStr) {
+function getPeriodStart(dateStr) {
   const d = new Date(dateStr)
-  // Convert to Stockholm time
   const local = new Date(d.toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm' }))
-  const day = local.getDay() // 0=Sun
-  const diff = (day === 0 ? -6 : 1 - day) // shift to Monday
-  local.setDate(local.getDate() + diff)
+  // Swedish week: Mon=0 ... Sun=6
+  const sweDay = (local.getDay() + 6) % 7
+  // Mon-Wed → period starts Monday, Thu-Sun → period starts Thursday
+  const daysBack = sweDay < 3 ? sweDay : sweDay - 3
+  local.setDate(local.getDate() - daysBack)
   const y = local.getFullYear()
   const mo = String(local.getMonth() + 1).padStart(2, '0')
   const dy = String(local.getDate()).padStart(2, '0')
   return `${y}-${mo}-${dy}`
 }
 
-function formatWeekLabel(isoDate) {
+function formatPeriodLabel(isoDate) {
   const d = new Date(isoDate + 'T12:00:00')
   return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' })
+}
+
+function getISOWeek(isoDate) {
+  const d = new Date(isoDate + 'T12:00:00')
+  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7)
+  const week1 = new Date(d.getFullYear(), 0, 4)
+  return 1 + Math.round(((d - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7)
 }
 
 export default function DelayTrendChart({ trains }) {
   if (!trains || trains.length === 0) return null
 
-  const byWeek = {}
+  const byPeriod = {}
 
   trains.forEach((train) => {
-    const week = getWeekStart(train.advertisedTimeAtLocation)
-    if (!byWeek[week]) byWeek[week] = { total: 0, delayed: 0, canceled: 0, count: 0 }
-    byWeek[week].count += 1
+    const period = getPeriodStart(train.advertisedTimeAtLocation)
+    if (!byPeriod[period]) byPeriod[period] = { total: 0, delayed: 0, canceled: 0, count: 0 }
+    byPeriod[period].count += 1
     if (train.canceled === true) {
-      byWeek[week].canceled += 1
+      byPeriod[period].canceled += 1
     } else if (train.delayMinutes != null && train.delayMinutes > 0) {
-      byWeek[week].total += train.delayMinutes
-      byWeek[week].delayed += 1
+      byPeriod[period].total += train.delayMinutes
+      byPeriod[period].delayed += 1
     }
   })
 
-  const data = Object.entries(byWeek)
+  const data = Object.entries(byPeriod)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([week, val]) => ({
-      vecka: formatWeekLabel(week),
+    .map(([period, val]) => ({
+      vecka: formatPeriodLabel(period),
+      weekNum: getISOWeek(period),
       snittFörsening: val.delayed > 0 ? Math.round(val.total / val.delayed) : 0,
       försenadeProcent: val.count > 0 ? Math.round((val.delayed / val.count) * 100) : 0,
       inställdaProcent: val.count > 0 ? Math.round((val.canceled / val.count) * 100) : 0,
       antalTåg: val.count,
     }))
 
+  const weekStarts = []
+  let lastWeek = null
+  data.forEach((d) => {
+    if (d.weekNum !== lastWeek) {
+      weekStarts.push({ x: d.vecka, week: d.weekNum })
+      lastWeek = d.weekNum
+    }
+  })
+
   if (data.length < 2) {
     return (
       <div style={styles.container}>
         <h2>Trend per vecka</h2>
-        <div style={styles.empty}>Behöver data från minst 2 veckor</div>
+        <div style={styles.empty}>Behöver data från minst 2 perioder</div>
       </div>
     )
   }
@@ -73,7 +91,7 @@ export default function DelayTrendChart({ trains }) {
               const inställda = Math.round((d.inställdaProcent / 100) * d.antalTåg)
               return (
                 <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem 1rem', fontSize: '0.85rem', lineHeight: '1.6' }}>
-                  <div style={{ fontWeight: '700', marginBottom: '0.3rem' }}>Vecka fr. {label}</div>
+                  <div style={{ fontWeight: '700', marginBottom: '0.3rem' }}>{label}</div>
                   <div style={{ color: '#6b7280' }}>Totalt: {d.antalTåg} tåg</div>
                   <div style={{ color: '#1a5c38' }}>Försenade: {d.försenadeProcent}% ({försenade} tåg)</div>
                   <div style={{ color: '#dc2626' }}>Inställda: {d.inställdaProcent}% ({inställda} tåg)</div>
@@ -82,6 +100,15 @@ export default function DelayTrendChart({ trains }) {
             }}
           />
           <Legend />
+          {weekStarts.map((ws) => (
+            <ReferenceLine
+              key={ws.week}
+              x={ws.x}
+              stroke="#e5e7eb"
+              strokeWidth={1}
+              label={{ value: `v.${ws.week}`, position: 'insideTopLeft', fontSize: 10, fill: '#c1c8d0' }}
+            />
+          ))}
           <Line
             type="monotone"
             dataKey="försenadeProcent"
