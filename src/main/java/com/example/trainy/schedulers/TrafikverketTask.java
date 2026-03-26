@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -52,7 +53,7 @@ public class TrafikverketTask {
         String url = "https://api.trafikinfo.trafikverket.se/v2/data.json";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(new MediaType("text", "xml", StandardCharsets.UTF_8));
-        String apiKey = System.getenv().getOrDefault("TRAFIKVERKET_API_KEY", "demokey");
+        String apiKey = System.getenv().getOrDefault("TRAFIKVERKET_API_KEY", "d17037d4c3494dc5931a9bebfcd89565");
 
         String body = String.format("""
                 <REQUEST>
@@ -96,10 +97,14 @@ public class TrafikverketTask {
         try {
             OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
             OffsetDateTime from = now.minusMinutes(30);
-            OffsetDateTime endOfDay = now.plusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            OffsetDateTime endOfDay = now.atZoneSameInstant(ZoneId.of("Europe/Stockholm"))
+                    .toLocalDate().plusDays(1).atStartOfDay(ZoneId.of("Europe/Stockholm"))
+                    .plusHours(4)
+                    .toOffsetDateTime()
+                    .withOffsetSameInstant(ZoneOffset.UTC);
 
             for (String station : getStations()) {
-                String response = fetchAnnouncements(station.trim(), from, endOfDay, 100);
+                String response = fetchAnnouncements(station.trim(), from, endOfDay, 500);
                 if (response != null && !response.isEmpty()) {
                     fillDatabase(response);
                 }
@@ -131,7 +136,7 @@ public class TrafikverketTask {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(new MediaType("text", "xml", StandardCharsets.UTF_8));
 
-        String apiKey = System.getenv().getOrDefault("TRAFIKVERKET_API_KEY", "demokey");
+        String apiKey = System.getenv().getOrDefault("TRAFIKVERKET_API_KEY", "d17037d4c3494dc5931a9bebfcd89565");
         DateTimeFormatter fmt = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
         String fromStr = from.format(fmt);

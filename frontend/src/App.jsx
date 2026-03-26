@@ -35,8 +35,9 @@ export default function App() {
       const res = await fetch('/train_announcements/stations')
       const data = await res.json()
       populateStationMap(data)
-      setStations(data)
-      setSelectedStation((prev) => prev ?? data[0]?.code ?? null)
+      const selectable = data.filter((s) => s.selectable)
+      setStations(selectable)
+      setSelectedStation((prev) => prev ?? selectable[0]?.code ?? null)
     } catch (e) {
       setError('Kunde inte hämta stationer.')
     }

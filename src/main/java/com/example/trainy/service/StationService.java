@@ -32,16 +32,19 @@ public class StationService {
             return cache;
         }
 
-        Set<String> codes = new LinkedHashSet<>();
-        codes.addAll(repository.findDistinctStations());
-        codes.addAll(repository.findDistinctToLocations());
+        Set<String> stationCodes = new LinkedHashSet<>(repository.findDistinctStations());
+        Set<String> destinationCodes = new LinkedHashSet<>(repository.findDistinctToLocations());
 
-        if (codes.isEmpty()) {
+        Set<String> allCodes = new LinkedHashSet<>();
+        allCodes.addAll(stationCodes);
+        allCodes.addAll(destinationCodes);
+
+        if (allCodes.isEmpty()) {
             return List.of();
         }
 
-        String response = queryTrafikverket(codes);
-        cache = parseResponse(response);
+        String response = queryTrafikverket(allCodes);
+        cache = parseResponse(response, stationCodes);
         return cache;
     }
 
@@ -55,7 +58,7 @@ public class StationService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(new MediaType("text", "xml", StandardCharsets.UTF_8));
 
-        String apiKey = System.getenv().getOrDefault("TRAFIKVERKET_API_KEY", "demokey");
+        String apiKey = System.getenv().getOrDefault("TRAFIKVERKET_API_KEY", "d17037d4c3494dc5931a9bebfcd89565");
 
         String eqNodes = codes.stream()
                 .map(code -> String.format("<EQ name=\"LocationSignature\" value=\"%s\" />", code))
@@ -64,7 +67,7 @@ public class StationService {
         String body = String.format("""
                 <REQUEST>
                   <LOGIN authenticationkey="%s"/>
-                  <QUERY objecttype="TrainStation" schemaversion="1">
+                  <QUERY objecttype="TrainStation" schemaversion="1" limit="1000">
                     <FILTER>
                       <OR>
                         %s
@@ -84,7 +87,7 @@ public class StationService {
         }
     }
 
-    private List<StationInfo> parseResponse(String response) {
+    private List<StationInfo> parseResponse(String response, Set<String> selectableCodes) {
         JsonNode root = JsonUtil.parseSafely(response);
         if (root == null) return List.of();
 
@@ -99,7 +102,7 @@ public class StationService {
             String code = station.path("LocationSignature").asText();
             String name = station.path("AdvertisedLocationName").asText();
             if (!code.isBlank() && !name.isBlank()) {
-                result.add(new StationInfo(code, name));
+                result.add(new StationInfo(code, name, selectableCodes.contains(code)));
             }
         }
 
