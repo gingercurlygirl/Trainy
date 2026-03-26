@@ -53,7 +53,7 @@ public class TrafikverketTask {
         String url = "https://api.trafikinfo.trafikverket.se/v2/data.json";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(new MediaType("text", "xml", StandardCharsets.UTF_8));
-        String apiKey = System.getenv().getOrDefault("TRAFIKVERKET_API_KEY", "d17037d4c3494dc5931a9bebfcd89565");
+        String apiKey = System.getenv().getOrDefault("TRAFIKVERKET_API_KEY", "demokey");
 
         String body = String.format("""
                 <REQUEST>
@@ -136,7 +136,7 @@ public class TrafikverketTask {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(new MediaType("text", "xml", StandardCharsets.UTF_8));
 
-        String apiKey = System.getenv().getOrDefault("TRAFIKVERKET_API_KEY", "d17037d4c3494dc5931a9bebfcd89565");
+        String apiKey = System.getenv().getOrDefault("TRAFIKVERKET_API_KEY", "demokey");
         DateTimeFormatter fmt = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
         String fromStr = from.format(fmt);
