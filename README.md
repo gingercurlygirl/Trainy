@@ -20,7 +20,7 @@ A web application for tracking train punctuality on the Mälartåg network in Sw
 
 ## Features
 
-- Live departures and arrivals per stationne
+- Live departures and arrivals per station
 - Delay statistics (total, on-time, delayed, canceled)
 - Charts: delay trend over time, delay by destination, hour, weekday, and train number
 - Most common deviation reasons
