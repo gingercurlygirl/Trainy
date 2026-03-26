@@ -2,6 +2,10 @@
 
 A web application for tracking train punctuality on the Mälartåg network in Sweden. Fetches live and historical data from the Trafikverket open API and presents it in an interactive dashboard with statistics and charts.
 
+![Dashboard — aktuella avgångar](images/malartag1.png)
+
+![Statistik och diagram](images/malartag2.png)
+
 ## Tech Stack
 
 **Backend**
@@ -16,7 +20,7 @@ A web application for tracking train punctuality on the Mälartåg network in Sw
 
 ## Features
 
-- Live departures and arrivals per station
+- Live departures and arrivals per stationne
 - Delay statistics (total, on-time, delayed, canceled)
 - Charts: delay trend over time, delay by destination, hour, weekday, and train number
 - Most common deviation reasons
